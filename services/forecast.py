@@ -20,7 +20,7 @@ async def fetch_history(coin_id, vs_currency, days):
             - 'ds': timestamp (ISO date format, suitable for Prophet)
             - 'y': price (the target variable for Prophet)
     """
-    cg = CoinGeckoClient()
+    cg = CoinGeckoClient(api_key="ac300b17ba474705b0fc958e6b8fd212")
 
     try:
         raw_data = await cg.market_chart(coin_id, vs_currency, days)
