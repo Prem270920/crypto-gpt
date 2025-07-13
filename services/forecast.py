@@ -67,6 +67,6 @@ if __name__ == "__main__":
     async def beta():
         price, lo, hi = await predict_price("solana", "usd", "2024-07-15")
 
-        print(f"SOL on 15-Jul-2024: ${price:,.2f}  (range {lo:,.0f} – {hi:,.0f})")
+        print(f"SOL on 15-Jul-2024: ${price:,.2f}  (range {lo:,.0f} - {hi:,.0f})")
 
     _asyncio.run(beta())

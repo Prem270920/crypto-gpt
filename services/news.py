@@ -1,17 +1,17 @@
 import httpx
 import pandas as pd
-from transformers import pipeline
+from transformers import pipeline # type: ignore
 
 # Using Hugging Face Transformers, loading sentiment-analysis pipeline 
 try:
     sentiment_pipline = pipeline("sentiment-analysis")
-except:
+except Exception as e:
      print(f"Warning: Could not load sentiment-analysis pipeline: {e}")
      _sentiment_pipeline = None
 
 async def coin_sentiment(coin_name):
 
-    """Return compound sentiment (-1…+1) from last 10 NewsAPI headlines using ML."""
+    """Return compound sentiment (-1, +1) from last 10 NewsAPI headlines using ML."""
 
     if sentiment_pipline is None:
           print("Sentiment pipeline not loaded. Returning neutral sentiment.")
@@ -46,7 +46,7 @@ async def coin_sentiment(coin_name):
         if result['label'] == "POSITIVE":
             compound_scores.append(result['score'])
         elif result['label'] == 'NEGATIVE':
-            compound_scores.append(-res['score'])
+            compound_scores.append(-result['score'])
         else: # Assuming 'NEUTRAL' or other categories are 0
             compound_scores.append(0.0)
 
