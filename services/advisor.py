@@ -33,15 +33,21 @@ async def coin_score(coin):
         return None
 
 async def top_coin():
+    """
+    Gets scores for all coins using a semaphore to limit concurrency.
+    """
+    # Create a semaphore that allows only 2 tasks to run at once
+    sem = asyncio.Semaphore(2)
+
+    async def get_score_with_semaphore(coin: str):
+        async with sem:
+            return await coin_score(coin)
+
+    tasks = [get_score_with_semaphore(c) for c in COIN_LIST]
+    results = await asyncio.gather(*tasks)
+
+    # Filter out any coins that failed
+    valid_results = [r for r in results if r is not None]
     
-    results = []
-    for coin in COIN_LIST:
-        score_data = await coin_score(coin)
-        results.append(score_data)
-        # Wait for 2 seconds before the next request to avoid being rate-limited
-        await asyncio.sleep(2)
-
-    ranked = sorted(results, key=lambda d: d['score'], reverse=True)
-    return ranked 
-
-
+    ranked = sorted(valid_results, key=lambda d: d['score'], reverse=True)
+    return ranked

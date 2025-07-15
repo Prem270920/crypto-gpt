@@ -7,6 +7,8 @@ class CoinGeckoClient:
 
     def __init__(self, api_key: str | None = None):
         headers = {"x-cg-demo-api-key": api_key} if api_key else {} 
+        
+        print(f"DEBUG: Initializing client with headers: {headers}")
         # Create an async client that will be used for all requests
         self._client = httpx.AsyncClient(base_url=url, headers=headers, timeout=15)
 

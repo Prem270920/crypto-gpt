@@ -1,8 +1,7 @@
 from __future__ import annotations
-import _asyncio
+import asyncio
 import pandas as pd
 from datetime import datetime
-from typing import Tuple
 from prophet import Prophet #forecasting lib from facebook
 from services.coingecko import CoinGeckoClient
 
@@ -20,19 +19,20 @@ async def fetch_history(coin_id, vs_currency, days):
             - 'ds': timestamp (ISO date format, suitable for Prophet)
             - 'y': price (the target variable for Prophet)
     """
-    cg = CoinGeckoClient(api_key="CG-vNmyQcAqALXnY8XB677BVA72")
+    cg = CoinGeckoClient(api_key="CG-zZrSVxFuf91Yv3JH4t4KjKcy")
 
     try:
         raw_data = await cg.market_chart(coin_id, vs_currency, days)
     finally:
         await cg.close()
 
-    df = pd.dataFrame(raw_data, columns = ["ts", "price"])
-    # Convert Unix timestamps (milliseconds) to datetime objects
-    df["ds"] = pd.to_datetime(df["ts"], unit="ms")
-    # Rename the 'price' column to 'y' as required by Prophet
-    df["y"] = df["price"]
+    if not raw_data:
+        return pd.DataFrame() # Return an empty DataFrame if no data
 
+    # Corrected 'pd.dataFrame' to 'pd.DataFrame'
+    df = pd.DataFrame(raw_data, columns=["ts", "price"])
+    df["ds"] = pd.to_datetime(df["ts"], unit="ms")
+    df["y"] = df["price"]
     return df[["ds", "y"]]
 
 async def predict_price(coin_id: str, vs_currency: str, target_date: str):
@@ -49,24 +49,31 @@ async def predict_price(coin_id: str, vs_currency: str, target_date: str):
                                      the lower bound of the prediction interval (yhat_lower),
                                      and the upper bound of the prediction interval (yhat_upper).
     """
-    # Fetch historical data for the past 2 years (365 * 2 days) to train the model
+    # Fetch historical data for the past 1 years (365 days) to train the model
 
-    df = await fetch_history(coin_id, vs_currency, days=365 * 2)
+    df = await fetch_history(coin_id, vs_currency, days=365)
+
+    if df.empty:
+        print(f"Warning: No historical data received for {coin_id}. Cannot forecast.")
+        return None
 
     model = Prophet(daily_seasonality=False, yearly_seasonality=True)
-
     model.fit(df)
 
     future_date = pd.DataFrame({"ds": [pd.to_datetime(target_date)]})
-
     forecast = model.predict(future_date).iloc[0]
-
     return float(forecast.yhat), float(forecast.yhat_lower), float(forecast.yhat_upper)
 
 if __name__ == "__main__":
-    async def beta():
-        price, lo, hi = await predict_price("solana", "usd", "2024-07-15")
+    async def _demo():
+        print("Testing forecast for Solana...")
+        # Note: The date here is in the past for this example to work with current data.
+        # Change "2024-07-15" to a future date for a real prediction.
+        prediction = await predict_price("solana", "usd", "2024-07-15")
+        if prediction:
+            price, lo, hi = prediction
+            print(f"SOL on 15-Jul-2024: ${price:,.2f} (range {lo:,.0f} - {hi:,.0f})")
+        else:
+            print("Prediction failed.")
 
-        print(f"SOL on 15-Jul-2024: ${price:,.2f}  (range {lo:,.0f} - {hi:,.0f})")
-
-    _asyncio.run(beta())
+    asyncio.run(_demo())
