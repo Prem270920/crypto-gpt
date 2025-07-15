@@ -4,7 +4,7 @@ from services.coingecko import CoinGeckoClient
 
 async def rsi(coin_id: str, vs_currency: str = "usd", period: int = 14) -> float:
     # 1. Create an INSTANCE of the client (the "house")
-    cg = CoinGeckoClient(api_key="ac300b17ba474705b0fc958e6b8fd212") 
+    cg = CoinGeckoClient(api_key="CG-vNmyQcAqALXnY8XB677BVA72") 
     
     try:
         # 2. Call methods on the instance variable 'cg'
