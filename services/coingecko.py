@@ -7,8 +7,6 @@ class CoinGeckoClient:
 
     def __init__(self, api_key: str | None = None):
         headers = {"x-cg-demo-api-key": api_key} if api_key else {} 
-        
-        print(f"DEBUG: Initializing client with headers: {headers}")
         # Create an async client that will be used for all requests
         self._client = httpx.AsyncClient(base_url=url, headers=headers, timeout=15)
 
@@ -38,6 +36,23 @@ class CoinGeckoClient:
         resp.raise_for_status()
 
         return resp.json().get("prices", [])
+
+    async def get_top_market_cap_coins(self, count: int = 20):
+        """
+        Fetches the top coins by market capitalization.
+        """
+        params = {
+            "vs_currency": "usd",
+            "order": "market_cap_desc",
+            "per_page": count,
+            "page": 1,
+            "sparkline": "false"
+        }
+
+        resp = await self._client.get("/coins/markets", params=params)
+        resp.raise_for_status()
+
+        return [coin["id"] for coin in resp.json()]
     
     async def close(self):
         """
