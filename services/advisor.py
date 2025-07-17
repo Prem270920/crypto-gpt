@@ -9,10 +9,7 @@ from datetime import date
 from typing import List, Dict
 from services.indicators import rsi
 from services.news import coin_sentiment
-
-COIN_LIST = ["bitcoin", "ethereum", "solana", "binancecoin", "ripple",
-             "dogecoin", "cardano", "tron", "polkadot", "chainlink",
-             "sui"]
+from services.coingecko import CoinGeckoClient
 
 async def coin_score(coin):
     try:
@@ -36,6 +33,14 @@ async def top_coin():
     """
     Gets scores for all coins using a semaphore to limit concurrency.
     """
+    print("Fetching top 20 coins by market cap...")
+    cg = CoinGeckoClient(api_key="CG-zZrSVxFuf91Yv3JH4t4KjKcy")
+
+    try:
+        top_coins_list = await cg.get_top_market_cap_coins(count=20)
+    finally:
+        await cg.close()
+        
     # Create a semaphore that allows only 2 tasks to run at once
     sem = asyncio.Semaphore(2)
 
@@ -43,7 +48,7 @@ async def top_coin():
         async with sem:
             return await coin_score(coin)
 
-    tasks = [get_score_with_semaphore(c) for c in COIN_LIST]
+    tasks = [get_score_with_semaphore(c) for c in top_coins_list]
     results = await asyncio.gather(*tasks)
 
     # Filter out any coins that failed
