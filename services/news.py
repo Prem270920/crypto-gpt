@@ -1,13 +1,16 @@
 import httpx
 import pandas as pd
-from transformers import pipeline # type: ignore
+import joblib
+from pathlib import Path
 
-# Using Hugging Face Transformers, loading sentiment-analysis pipeline 
+model_path = Path("models/traditional_sentiment_model.pkl")
+
+
 try:
-    sentiment_pipline = pipeline("sentiment-analysis")
-except Exception as e:
-     print(f"Warning: Could not load sentiment-analysis pipeline: {e}")
-     _sentiment_pipeline = None
+    sentiment_pipline = joblib.load(model_path)
+except FileNotFoundError:
+    print(f"Warning: Model not found at {model_path}. Cannot perform sentiment analysis.")
+    sentiment_pipline = None
 
 async def coin_sentiment(coin_name):
 
@@ -27,10 +30,11 @@ async def coin_sentiment(coin_name):
     }
 
     async with httpx.AsyncClient(timeout=10) as client:
-         response = await client.get(url, params=params)
-    
-    if response.status_code != 200:
-         return 0.0
+        try:
+            response = await client.get(url, params=params)
+        except httpx.HTTPStatusError as e:
+            print(f"NewsAPI error for {coin_name}: {e}")
+            return 0.0
     
     articles = response.json().get("articles", [])
     headlines = [art["title"]for art in articles if "title" in art and art["title"]]
@@ -38,19 +42,13 @@ async def coin_sentiment(coin_name):
     if not headlines:
         return 0.0
     
-    results = sentiment_pipline(headlines)
+    predictions = sentiment_pipline.predict(headlines)
 
     #mapping: POSITIVE -> +score, NEGATIVE -> -score, NEUTRAL -> 0
-    compound_scores = []
-    for result in results:
-        if result['label'] == "POSITIVE":
-            compound_scores.append(result['score'])
-        elif result['label'] == 'NEGATIVE':
-            compound_scores.append(-result['score'])
-        else: # Assuming 'NEUTRAL' or other categories are 0
-            compound_scores.append(0.0)
+    score_map = {"positive": 1.0, "negative": -1.0, "neutral": 0.0}
+    scores = [score_map.get(pred, 0.0) for pred in predictions]
 
-    return sum(compound_scores) / len(compound_scores) if compound_scores else 0.0
+    return sum(scores) / len(scores) if scores else 0.0
 
 # --- Quick CLI Sanity Check
 
