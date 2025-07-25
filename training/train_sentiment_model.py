@@ -6,7 +6,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.metrics import classification_report, accuracy_score
 import joblib
 
-df = pd.read_csv("labeled_headlines.csv")
+df = pd.read_csv("../labeled_headlines.csv")
 
 df.dropna(subset=['headline'], inplace=True)
 
